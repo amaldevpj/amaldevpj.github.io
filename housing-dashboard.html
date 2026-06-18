@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UK Housing Analytics — Dashboard | Amaldev P J</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0A1322; --surface:#13263F; --surface2:#16304E; --bg2:#0F1E33;
+    --text:#EAF1FB; --muted:#9CB2CE; --faint:#6F87A6;
+    --teal:#4FBFA3; --teal-dim:#2E7E6C; --gold:#E0A33E; --blue:#5B8DEF;
+    --line:rgba(255,255,255,0.09);
+    --display:'Syne',system-ui,sans-serif; --body:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:clamp(18px,3vw,32px)}
+  .dash{max-width:1180px;margin:0 auto}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:8px}
+  .top h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,32px);letter-spacing:-.5px}
+  .top .sub{font-family:var(--mono);font-size:12px;color:var(--teal);letter-spacing:1px;margin-top:6px;text-transform:uppercase}
+  .ctrl{display:flex;align-items:center;gap:10px}
+  .ctrl label{font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--faint);text-transform:uppercase}
+  select{font-family:var(--body);font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 14px;cursor:pointer}
+  select:focus{outline:1px solid var(--teal-dim)}
+  .note{font-family:var(--mono);font-size:11px;color:var(--faint);margin:14px 0 22px;letter-spacing:.5px}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:linear-gradient(160deg,var(--surface),var(--bg2))}
+  .kpi .k{font-family:var(--mono);font-size:11px;letter-spacing:1.2px;color:var(--teal);text-transform:uppercase}
+  .kpi .v{font-family:var(--display);font-weight:700;font-size:clamp(22px,3vw,30px);margin-top:8px;letter-spacing:-.5px}
+  .kpi .d{font-size:12px;color:var(--muted);margin-top:4px}
+  .kpi .d.up{color:var(--teal)} .kpi .d.down{color:#e87f7f}
+
+  .charts{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+  @media(max-width:860px){.charts{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:16px;padding:20px;background:linear-gradient(160deg,var(--surface),var(--bg2))}
+  .card h3{font-family:var(--body);font-weight:600;font-size:14px;color:var(--text);margin-bottom:2px}
+  .card .cs{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.5px;margin-bottom:14px}
+  .cwrap{position:relative;height:260px}
+  .full{grid-column:1/-1}
+  .foot{margin-top:18px;font-family:var(--mono);font-size:11px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .foot a{color:var(--teal);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="dash">
+  <div class="top">
+    <div>
+      <h1>UK Housing Analytics</h1>
+      <div class="sub">Reporting layer · Microsoft Fabric pipeline</div>
+    </div>
+    <div class="ctrl">
+      <label for="region">Region</label>
+      <select id="region">
+        <option>England &amp; Wales</option>
+        <option>London</option>
+        <option>South East</option>
+        <option>West Midlands</option>
+        <option>North West</option>
+        <option>Scotland</option>
+      </select>
+    </div>
+  </div>
+  <div class="note">Interactive demo · representative Land Registry-style data · the front end to my uk-housing-fabric medallion pipeline.</div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="k">Average Price</div><div class="v" id="kAvg">—</div><div class="d">latest year</div></div>
+    <div class="kpi"><div class="k">Median Price</div><div class="v" id="kMed">—</div><div class="d">latest year</div></div>
+    <div class="kpi"><div class="k">Transactions</div><div class="v" id="kTxn">—</div><div class="d">latest year</div></div>
+    <div class="kpi"><div class="k">Price YoY</div><div class="v" id="kYoy">—</div><div class="d" id="kYoyD">vs prior year</div></div>
+  </div>
+
+  <div class="charts">
+    <div class="card"><h3>Average price trend</h3><div class="cs" id="t1">2015–2024</div><div class="cwrap"><canvas id="trend"></canvas></div></div>
+    <div class="card"><h3>Property type mix</h3><div class="cs" id="t2">share of transactions</div><div class="cwrap"><canvas id="types"></canvas></div></div>
+    <div class="card full"><h3>Average price by region</h3><div class="cs">latest year · selected region highlighted</div><div class="cwrap"><canvas id="byregion"></canvas></div></div>
+    <div class="card full"><h3>Transaction volume</h3><div class="cs" id="t4">per year, thousands</div><div class="cwrap"><canvas id="volume"></canvas></div></div>
+  </div>
+
+  <div class="foot">
+    <span>Built by Amaldev P J · Power BI · Microsoft Fabric · SQL</span>
+    <a href="https://github.com/amaldevpj/uk-housing-fabric" target="_blank" rel="noopener">View the pipeline on GitHub ↗</a>
+  </div>
+</div>
+
+<script>
+const YEARS = [2015,2016,2017,2018,2019,2020,2021,2022,2023,2024];
+const DATA = {
+  'England & Wales':{price:[200,212,224,231,235,245,265,290,287,293], txn:[880,900,910,905,890,780,1050,920,800,760], type:[24,29,27,20]},
+  'London':{price:[430,470,482,478,475,492,508,535,512,521], txn:[110,112,108,105,100,88,118,102,90,86], type:[6,14,30,50]},
+  'South East':{price:[285,305,320,328,332,345,365,392,386,394], txn:[180,185,188,186,182,160,210,188,168,160], type:[22,28,26,24]},
+  'West Midlands':{price:[165,178,190,198,205,215,235,255,251,258], txn:[95,98,100,99,97,85,112,100,90,86], type:[25,32,28,15]},
+  'North West':{price:[150,158,168,175,182,190,205,225,221,228], txn:[120,124,128,127,125,110,145,130,118,112], type:[20,34,32,14]},
+  'Scotland':{price:[140,148,156,162,168,175,190,205,201,209], txn:[95,98,100,99,98,86,116,104,94,90], type:[22,26,24,28]},
+};
+const REGIONS = Object.keys(DATA);
+const TEAL='#4FBFA3', GOLD='#E0A33E', BLUE='#5B8DEF', MUTED='#9CB2CE';
+const gbp = n => '£' + Math.round(n).toLocaleString();
+
+Chart.defaults.color = MUTED;
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+Chart.defaults.plugins.legend.display = false;
+
+function kpis(r){
+  const d = DATA[r], last = d.price[9]*1000, prev = d.price[8]*1000;
+  const yoy = ((last-prev)/prev*100);
+  document.getElementById('kAvg').textContent = gbp(last);
+  document.getElementById('kMed').textContent = gbp(last*0.87);
+  document.getElementById('kTxn').textContent = d.txn[9] + 'k';
+  document.getElementById('kYoy').textContent = (yoy>=0?'+':'') + yoy.toFixed(1) + '%';
+  const dd = document.getElementById('kYoyD');
+  dd.className = 'd ' + (yoy>=0?'up':'down');
+  dd.textContent = (yoy>=0?'▲':'▼') + ' vs prior year';
+}
+
+const trend = new Chart(document.getElementById('trend'), {
+  type:'line',
+  data:{labels:YEARS, datasets:[{data:DATA[REGIONS[0]].price, borderColor:TEAL, backgroundColor:'rgba(79,191,163,0.12)', borderWidth:2.5, fill:true, tension:.35, pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:TEAL}]},
+  options:{maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:c=>gbp(c.parsed.y*1000)}}}, scales:{y:{ticks:{callback:v=>'£'+v+'k'}}}}
+});
+const types = new Chart(document.getElementById('types'), {
+  type:'doughnut',
+  data:{labels:['Detached','Semi-detached','Terraced','Flat'], datasets:[{data:DATA[REGIONS[0]].type, backgroundColor:[TEAL,BLUE,GOLD,'#7d8aa3'], borderColor:'#0F1E33', borderWidth:2}]},
+  options:{maintainAspectRatio:false, cutout:'62%', plugins:{legend:{display:true, position:'right', labels:{boxWidth:10, font:{size:11}}}, tooltip:{callbacks:{label:c=>c.label+': '+c.parsed+'%'}}}}
+});
+const byregion = new Chart(document.getElementById('byregion'), {
+  type:'bar',
+  data:{labels:REGIONS, datasets:[{data:REGIONS.map(r=>DATA[r].price[9]), backgroundColor:REGIONS.map(r=>r===REGIONS[0]?GOLD:'rgba(79,191,163,0.55)'), borderRadius:6}]},
+  options:{maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:c=>gbp(c.parsed.y*1000)}}}, scales:{y:{ticks:{callback:v=>'£'+v+'k'}}}}
+});
+const volume = new Chart(document.getElementById('volume'), {
+  type:'bar',
+  data:{labels:YEARS, datasets:[{data:DATA[REGIONS[0]].txn, backgroundColor:'rgba(91,141,239,0.6)', borderRadius:5}]},
+  options:{maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:c=>c.parsed.y+'k transactions'}}}, scales:{y:{ticks:{callback:v=>v+'k'}}}}
+});
+
+function update(r){
+  kpis(r);
+  trend.data.datasets[0].data = DATA[r].price; trend.update();
+  types.data.datasets[0].data = DATA[r].type; types.update();
+  byregion.data.datasets[0].backgroundColor = REGIONS.map(x=>x===r?GOLD:'rgba(79,191,163,0.55)'); byregion.update();
+  volume.data.datasets[0].data = DATA[r].txn; volume.update();
+  document.getElementById('t1').textContent = r + ' · 2015–2024';
+}
+document.getElementById('region').addEventListener('change', e=>update(e.target.value));
+update(REGIONS[0]);
+</script>
+</body>
+</html>

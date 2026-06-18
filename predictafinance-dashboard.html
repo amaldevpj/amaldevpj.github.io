@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PredictaFinance — Smart Ops Dashboard | Amaldev P J</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0A1322; --surface:#13263F; --surface2:#16304E; --bg2:#0F1E33;
+    --text:#EAF1FB; --muted:#9CB2CE; --faint:#6F87A6;
+    --teal:#4FBFA3; --teal-dim:#2E7E6C; --gold:#E0A33E; --blue:#5B8DEF;
+    --line:rgba(255,255,255,0.09);
+    --display:'Syne',system-ui,sans-serif; --body:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:clamp(18px,3vw,32px)}
+  .dash{max-width:1180px;margin:0 auto}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+  .top h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,32px);letter-spacing:-.5px}
+  .top .sub{font-family:var(--mono);font-size:12px;color:var(--teal);letter-spacing:1px;margin-top:6px;text-transform:uppercase}
+  .ctrl{display:flex;align-items:center;gap:10px}
+  .ctrl label{font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--faint);text-transform:uppercase}
+  select{font-family:var(--body);font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 14px;cursor:pointer}
+  select:focus{outline:1px solid var(--teal-dim)}
+  .note{font-family:var(--mono);font-size:11px;color:var(--faint);margin:14px 0 22px;letter-spacing:.5px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:linear-gradient(160deg,var(--surface),var(--bg2))}
+  .kpi .k{font-family:var(--mono);font-size:11px;letter-spacing:1.2px;color:var(--teal);text-transform:uppercase}
+  .kpi .v{font-family:var(--display);font-weight:700;font-size:clamp(20px,3vw,28px);margin-top:8px;letter-spacing:-.5px}
+  .kpi .d{font-size:12px;color:var(--muted);margin-top:4px}
+  .charts{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+  @media(max-width:860px){.charts{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:16px;padding:20px;background:linear-gradient(160deg,var(--surface),var(--bg2))}
+  .card h3{font-family:var(--body);font-weight:600;font-size:14px;margin-bottom:2px}
+  .card .cs{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.5px;margin-bottom:14px}
+  .cwrap{position:relative;height:260px}
+  .full{grid-column:1/-1}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{font-family:var(--mono);font-size:11px;letter-spacing:.5px;color:var(--faint);text-transform:uppercase}
+  td.num{font-variant-numeric:tabular-nums;color:var(--muted)}
+  .badge{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--gold);color:var(--gold)}
+  .foot{margin-top:18px;font-family:var(--mono);font-size:11px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .foot a{color:var(--teal);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="dash">
+  <div class="top">
+    <div>
+      <h1>PredictaFinance — Smart Ops</h1>
+      <div class="sub">Reporting layer · forecasting &amp; anomaly detection</div>
+    </div>
+    <div class="ctrl">
+      <label for="unit">Business unit</label>
+      <select id="unit"></select>
+    </div>
+  </div>
+  <div class="note">Interactive demo · live output of the PredictaFinance pipeline on synthetic data · DuckDB warehouse, Holt-Winters forecast, z-score anomalies.</div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="k">Revenue</div><div class="v" id="kRev">—</div><div class="d">3-year total</div></div>
+    <div class="kpi"><div class="k">Expense</div><div class="v" id="kExp">—</div><div class="d">3-year total</div></div>
+    <div class="kpi"><div class="k">Profit</div><div class="v" id="kPro">—</div><div class="d">3-year total</div></div>
+    <div class="kpi"><div class="k">Profit margin</div><div class="v" id="kMar">—</div><div class="d">profit / revenue</div></div>
+  </div>
+
+  <div class="charts">
+    <div class="card"><h3>Revenue vs expense</h3><div class="cs" id="t1">monthly</div><div class="cwrap"><canvas id="trend"></canvas></div></div>
+    <div class="card"><h3>Revenue forecast</h3><div class="cs" id="t2">company-wide · Holt-Winters</div><div class="cwrap"><canvas id="fc"></canvas></div></div>
+    <div class="card"><h3>Revenue by region</h3><div class="cs">3-year total</div><div class="cwrap"><canvas id="region"></canvas></div></div>
+    <div class="card"><h3>Expense by category</h3><div class="cs">3-year total</div><div class="cwrap"><canvas id="cat"></canvas></div></div>
+    <div class="card full">
+      <h3>Flagged anomalies <span class="badge" id="anCount"></span></h3>
+      <div class="cs">rolling z-score beyond 3 sigma</div>
+      <table><thead><tr><th>Date</th><th>Unit</th><th>Region</th><th>Metric</th><th>Value</th><th>z</th></tr></thead><tbody id="anBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Built by Amaldev P J · DuckDB · SQL · statsmodels · Power BI-ready</span>
+    <a href="https://github.com/amaldevpj/PredictaFinance-Smart-Ops-Dashboard" target="_blank" rel="noopener">View the project on GitHub ↗</a>
+  </div>
+</div>
+
+<script>
+const DATA = {"months": ["2022-01", "2022-02", "2022-03", "2022-04", "2022-05", "2022-06", "2022-07", "2022-08", "2022-09", "2022-10", "2022-11", "2022-12", "2023-01", "2023-02", "2023-03", "2023-04", "2023-05", "2023-06", "2023-07", "2023-08", "2023-09", "2023-10", "2023-11", "2023-12", "2024-01", "2024-02", "2024-03", "2024-04", "2024-05", "2024-06", "2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12"], "units": ["All", "Online", "Retail", "Services", "Wholesale"], "byUnit": {"All": {"revenue": [6090875, 5970895, 7301809, 7714525, 8631967, 8681360, 8744255, 8440781, 7601149, 7106190, 6490151, 6471390, 6599341, 6479084, 7931483, 8247965, 9289827, 9296857, 9400771, 8709933, 8080175, 7656317, 6980428, 6893390, 7192598, 7221322, 8402625, 9094141, 10088436, 9864693, 10282377, 9715487, 8746331, 8228110, 7358845, 7411439], "expense": [5900403, 5615743, 6618083, 6770817, 7386537, 7330945, 7437328, 7274417, 6709814, 6485829, 6054246, 6118507, 6200545, 5907438, 6982112, 7068645, 7741376, 7681278, 7820198, 7426819, 6974801, 6820491, 6343116, 6377825, 6534269, 6408528, 8040142, 7560872, 8211264, 8013666, 8334449, 8026948, 7350111, 7133789, 6553440, 6670626]}, "Online": {"revenue": [1679188, 1653584, 1998153, 2132844, 2370839, 2380776, 2431206, 2332195, 2108359, 1969922, 1791828, 1791278, 1827666, 1810221, 2202558, 2299305, 2580030, 2575760, 2594437, 2411601, 2231250, 2136639, 1938471, 1923179, 1990840, 1997846, 2345755, 2501189, 2769464, 2723525, 2838108, 2667948, 2415709, 2274883, 2034140, 2046610], "expense": [1622640, 1552557, 1816244, 1879172, 2034882, 2008891, 2068192, 2011658, 1862853, 1793268, 1671411, 1695514, 1719702, 1643343, 1935025, 1956748, 2142606, 2118169, 2161744, 2058426, 1925578, 1901465, 1761032, 1770487, 1802042, 1773248, 2816861, 2085024, 2261608, 2216840, 2307085, 2208364, 2030545, 1976881, 1810485, 1843982]}, "Retail": {"revenue": [1288280, 1272330, 1549621, 1638667, 1835059, 1871650, 1872024, 1798296, 1597494, 1516873, 1393835, 1378730, 1389433, 1370611, 1703585, 1744867, 1980487, 1986785, 1988152, 1857175, 1726314, 1618535, 1493368, 1453705, 1530617, 1538911, 1793868, 1948405, 2156444, 2097840, 2163124, 2085312, 1867292, 1757743, 1574951, 1589116], "expense": [1257136, 1192036, 1408154, 1436670, 1568291, 1575315, 1588174, 1546971, 1411114, 1386185, 1295564, 1302130, 1311313, 1254771, 1499622, 1501266, 1647422, 1639235, 1656955, 1578369, 1485092, 1439388, 1354977, 1345822, 1391328, 1364122, 1542407, 1621872, 1751871, 1702141, 1759501, 1720902, 1567333, 1519737, 1399823, 1432040]}, "Services": {"revenue": [1037851, 1028098, 1254332, 1304979, 1465781, 1468222, 1475910, 1436713, 1286507, 1195353, 1093398, 1098192, 1120270, 1101024, 1336160, 1409584, 1584779, 1576227, 1625352, 1480428, 1368978, 1294895, 1173529, 1175014, 1220896, 1216104, 1422132, 1558734, 1710045, 1685805, 1747204, 1647614, 1475560, 1400290, 1246039, 1261811], "expense": [1007363, 962436, 1128132, 1143318, 1257297, 1241837, 1258344, 1234655, 1134452, 1094698, 1025496, 1037063, 1054263, 1001678, 1176611, 1208037, 1324950, 1307322, 1348713, 1264573, 1181725, 1153723, 1071218, 1088429, 1112512, 1085840, 1229640, 1286908, 1393367, 1359619, 1416841, 1357551, 1245127, 1211341, 1110364, 1136157]}, "Wholesale": {"revenue": [2085557, 2016883, 2499703, 2638036, 2960289, 2960712, 2965115, 2873576, 2608790, 2424042, 2211090, 2203190, 2261971, 2197228, 2689181, 2794209, 3144531, 3158085, 3192830, 2960729, 2753633, 2606248, 2375060, 2341492, 2450245, 2468460, 2840870, 3085813, 3452484, 3357522, 3533942, 3314612, 2987770, 2795194, 2503715, 2513902], "expense": [2013264, 1908715, 2265552, 2311656, 2526067, 2504902, 2522618, 2481133, 2301395, 2211679, 2061776, 2083799, 2115268, 2007646, 2370855, 2402593, 2626399, 2616551, 2652787, 2525452, 2382407, 2325916, 2155889, 2173087, 2228387, 2185318, 2451235, 2567068, 2804418, 2735066, 2851021, 2740132, 2507105, 2425830, 2232768, 2258446]}}, "regionByUnit": {"All": [{"region": "London", "revenue": 76629427}, {"region": "South East", "revenue": 61329607}, {"region": "Midlands", "revenue": 53733152}, {"region": "North West", "revenue": 50673143}, {"region": "Scotland", "revenue": 46051996}], "Online": [{"region": "London", "revenue": 21188946}, {"region": "South East", "revenue": 16985993}, {"region": "Midlands", "revenue": 14847843}, {"region": "North West", "revenue": 14013029}, {"region": "Scotland", "revenue": 12741495}], "Retail": [{"region": "London", "revenue": 16330536}, {"region": "South East", "revenue": 13089487}, {"region": "Midlands", "revenue": 11394239}, {"region": "North West", "revenue": 10785169}, {"region": "Scotland", "revenue": 9830070}], "Services": [{"region": "London", "revenue": 12929060}, {"region": "South East", "revenue": 10417322}, {"region": "Midlands", "revenue": 9168082}, {"region": "North West", "revenue": 8646920}, {"region": "Scotland", "revenue": 7822426}], "Wholesale": [{"region": "London", "revenue": 26180885}, {"region": "South East", "revenue": 20836806}, {"region": "Midlands", "revenue": 18322989}, {"region": "North West", "revenue": 17228026}, {"region": "Scotland", "revenue": 15658005}]}, "categoryByUnit": {"All": [{"category": "COGS", "amount": 51136145}, {"category": "Payroll", "amount": 50552790}, {"category": "Logistics", "amount": 50242921}, {"category": "Overhead", "amount": 50217475}, {"category": "Marketing", "amount": 49736087}], "Online": [{"category": "COGS", "amount": 14208639}, {"category": "Logistics", "amount": 14093273}, {"category": "Payroll", "amount": 14062058}, {"category": "Marketing", "amount": 14012096}, {"category": "Overhead", "amount": 13868503}], "Retail": [{"category": "COGS", "amount": 10813435}, {"category": "Payroll", "amount": 10800763}, {"category": "Logistics", "amount": 10721087}, {"category": "Overhead", "amount": 10686616}, {"category": "Marketing", "amount": 10433145}], "Services": [{"category": "Logistics", "amount": 8643869}, {"category": "Overhead", "amount": 8618811}, {"category": "Payroll", "amount": 8545668}, {"category": "Marketing", "amount": 8471292}, {"category": "COGS", "amount": 8371963}], "Wholesale": [{"category": "COGS", "amount": 17742107}, {"category": "Payroll", "amount": 17144300}, {"category": "Overhead", "amount": 17043546}, {"category": "Marketing", "amount": 16819554}, {"category": "Logistics", "amount": 16784691}]}, "forecast": [{"month": "2022-01", "revenue": 6090875, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-02", "revenue": 5970895, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-03", "revenue": 7301809, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-04", "revenue": 7714525, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-05", "revenue": 8631967, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-06", "revenue": 8681360, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-07", "revenue": 8744255, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-08", "revenue": 8440781, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-09", "revenue": 7601149, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-10", "revenue": 7106190, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-11", "revenue": 6490151, "lower": null, "upper": null, "kind": "actual"}, {"month": "2022-12", "revenue": 6471390, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-01", "revenue": 6599341, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-02", "revenue": 6479084, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-03", "revenue": 7931483, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-04", "revenue": 8247965, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-05", "revenue": 9289827, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-06", "revenue": 9296857, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-07", "revenue": 9400771, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-08", "revenue": 8709933, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-09", "revenue": 8080175, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-10", "revenue": 7656317, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-11", "revenue": 6980428, "lower": null, "upper": null, "kind": "actual"}, {"month": "2023-12", "revenue": 6893390, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-01", "revenue": 7192598, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-02", "revenue": 7221322, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-03", "revenue": 8402625, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-04", "revenue": 9094141, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-05", "revenue": 10088436, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-06", "revenue": 9864693, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-07", "revenue": 10282377, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-08", "revenue": 9715487, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-09", "revenue": 8746331, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-10", "revenue": 8228110, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-11", "revenue": 7358845, "lower": null, "upper": null, "kind": "actual"}, {"month": "2024-12", "revenue": 7411439, "lower": null, "upper": null, "kind": "actual"}, {"month": "2025-01", "revenue": 7578890, "lower": 7346466, "upper": 7811314, "kind": "forecast"}, {"month": "2025-02", "revenue": 7505976, "lower": 7273552, "upper": 7738400, "kind": "forecast"}, {"month": "2025-03", "revenue": 8805693, "lower": 8573269, "upper": 9038117, "kind": "forecast"}, {"month": "2025-04", "revenue": 9291003, "lower": 9058579, "upper": 9523427, "kind": "forecast"}, {"month": "2025-05", "revenue": 10294327, "lower": 10061903, "upper": 10526751, "kind": "forecast"}, {"month": "2025-06", "revenue": 10182424, "lower": 9950000, "upper": 10414848, "kind": "forecast"}], "anomalies": [{"date": "2024-03-01", "unit": "Online", "region": "North West", "metric": "expense", "value": 17609, "z": 4.4}, {"date": "2024-03-01", "unit": "Online", "region": "South East", "metric": "expense", "value": 19848, "z": 3.9}, {"date": "2024-03-04", "unit": "Online", "region": "Scotland", "metric": "expense", "value": 16177, "z": 3.7}, {"date": "2024-03-01", "unit": "Online", "region": "Midlands", "metric": "expense", "value": 16346, "z": 3.6}, {"date": "2023-08-07", "unit": "Wholesale", "region": "North West", "metric": "revenue", "value": 8408, "z": -3.4}, {"date": "2023-08-07", "unit": "Services", "region": "North West", "metric": "revenue", "value": 4359, "z": -3.3}, {"date": "2024-03-01", "unit": "Online", "region": "London", "metric": "expense", "value": 23132, "z": 3.2}, {"date": "2024-03-05", "unit": "Online", "region": "Scotland", "metric": "expense", "value": 16300, "z": 3.0}], "metrics": {"hwMape": 2.22, "naiveMape": 7.6}};
+const TEAL="#4FBFA3", GOLD="#E0A33E", BLUE="#5B8DEF", NAVY="#14335A", MUTED="#9CB2CE";
+const PAL=[TEAL,BLUE,GOLD,"#7d8aa3","#c98b6b"];
+const gbp = n => "£" + Math.round(n).toLocaleString();
+const $ = id => document.getElementById(id);
+
+// filter
+const sel=$("unit");
+DATA.units.forEach(u=>{const o=document.createElement("option");o.value=u;o.textContent=(u==="All"?"All units":u);sel.appendChild(o);});
+
+// ---- text: always renders, no chart dependency ----
+function renderText(u){
+  const m=DATA.byUnit[u];
+  const rev=m.revenue.reduce((a,b)=>a+b,0), exp=m.expense.reduce((a,b)=>a+b,0), pro=rev-exp;
+  $("kRev").textContent=gbp(rev);
+  $("kExp").textContent=gbp(exp);
+  $("kPro").textContent=gbp(pro);
+  $("kMar").textContent=(rev?pro/rev*100:0).toFixed(1)+"%";
+  $("t1").textContent=(u==="All"?"all units":u)+" · monthly";
+  const an=DATA.anomalies.filter(a=>u==="All"||a.unit===u);
+  $("anCount").textContent=an.length+" flagged";
+  $("anBody").innerHTML=an.map(a=>`<tr><td>${a.date}</td><td>${a.unit}</td><td>${a.region}</td><td>${a.metric}</td><td class="num">${gbp(a.value)}</td><td class="num">${a.z}</td></tr>`).join("")
+    || `<tr><td colspan="6" style="color:var(--faint)">No anomalies for this unit.</td></tr>`;
+}
+
+// ---- charts: guarded enhancement ----
+let trend, fc, region, cat, chartsReady=false;
+function buildCharts(){
+  Chart.defaults.color=MUTED; Chart.defaults.borderColor="rgba(255,255,255,0.06)";
+  Chart.defaults.font.family="'Inter', system-ui, sans-serif"; Chart.defaults.plugins.legend.labels.boxWidth=10;
+  trend=new Chart($("trend"),{type:"line",data:{labels:DATA.months,datasets:[
+    {label:"Revenue",data:[],borderColor:TEAL,backgroundColor:"rgba(79,191,163,0.12)",borderWidth:2.5,fill:true,tension:.3,pointRadius:0},
+    {label:"Expense",data:[],borderColor:GOLD,borderWidth:2,tension:.3,pointRadius:0}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:true}},scales:{x:{ticks:{maxTicksLimit:8}},y:{ticks:{callback:v=>"£"+(v/1e6).toFixed(1)+"M"}}}}});
+  const fl=DATA.forecast.map(r=>r.month);
+  fc=new Chart($("fc"),{type:"line",data:{labels:fl,datasets:[
+    {label:"Actual",data:DATA.forecast.map(r=>r.kind==="actual"?r.revenue:null),borderColor:NAVY,borderWidth:2.5,pointRadius:0,tension:.3},
+    {label:"Forecast",data:DATA.forecast.map(r=>r.kind==="forecast"?r.revenue:null),borderColor:TEAL,borderDash:[6,4],borderWidth:2.5,pointRadius:0,tension:.3,spanGaps:true},
+    {label:"Upper",data:DATA.forecast.map(r=>r.upper),borderColor:"rgba(0,0,0,0)",backgroundColor:"rgba(79,191,163,0.13)",fill:"+1",pointRadius:0},
+    {label:"Lower",data:DATA.forecast.map(r=>r.lower),borderColor:"rgba(0,0,0,0)",pointRadius:0,fill:false}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:true,labels:{filter:i=>["Actual","Forecast"].includes(i.text)}}},scales:{x:{ticks:{maxTicksLimit:7}},y:{ticks:{callback:v=>"£"+(v/1e6).toFixed(1)+"M"}}}}});
+  $("t2").textContent=`company-wide · Holt-Winters MAPE ${DATA.metrics.hwMape}% vs naive ${DATA.metrics.naiveMape}%`;
+  region=new Chart($("region"),{type:"bar",data:{labels:[],datasets:[{data:[],backgroundColor:"rgba(79,191,163,0.6)",borderRadius:6}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>"£"+(v/1e6).toFixed(1)+"M"}}}}});
+  cat=new Chart($("cat"),{type:"doughnut",data:{labels:[],datasets:[{data:[],backgroundColor:PAL,borderColor:"#0F1E33",borderWidth:2}]},
+    options:{maintainAspectRatio:false,cutout:"60%",plugins:{legend:{position:"right",labels:{font:{size:11}}},tooltip:{callbacks:{label:c=>c.label+": "+gbp(c.parsed)}}}}});
+  chartsReady=true;
+}
+function renderCharts(u){
+  const m=DATA.byUnit[u];
+  trend.data.datasets[0].data=m.revenue; trend.data.datasets[1].data=m.expense; trend.update();
+  const rg=DATA.regionByUnit[u]; region.data.labels=rg.map(x=>x.region); region.data.datasets[0].data=rg.map(x=>x.revenue); region.update();
+  const ct=DATA.categoryByUnit[u]; cat.data.labels=ct.map(x=>x.category); cat.data.datasets[0].data=ct.map(x=>x.amount); cat.update();
+}
+function update(u){ renderText(u); if(chartsReady) renderCharts(u); }
+sel.addEventListener("change",e=>update(e.target.value));
+
+renderText("All");   // numbers appear immediately, with or without charts
+if(typeof Chart!=="undefined"){
+  try{ buildCharts(); renderCharts("All"); }catch(err){ console.error("chart render failed", err); }
+}
+</script>
+</body>
+</html>
