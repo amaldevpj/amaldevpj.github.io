@@ -108,6 +108,13 @@
   .proj .link:hover{text-decoration:underline}
   .ghlink{display:inline-block;margin-top:30px;font-family:var(--mono);font-size:13px;color:var(--muted)}
   .ghlink:hover{color:var(--teal)}
+  .dash-frame{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--bg2);box-shadow:0 24px 70px rgba(0,0,0,.4)}
+  .dash-frame iframe{display:block;width:100%;height:880px;border:0}
+  @media(max-width:760px){.dash-frame iframe{height:1320px}}
+  .dash-tabs{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .dtab{font-family:var(--mono);font-size:13px;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:8px 18px;cursor:pointer;transition:color .25s,background .25s,border-color .25s}
+  .dtab:hover{color:var(--text);border-color:var(--teal-dim)}
+  .dtab.active{color:#04121C;background:var(--teal);border-color:var(--teal)}
 
   /* certifications */
   .cert-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
@@ -167,6 +174,7 @@
       <a href="#about">About</a>
       <a href="#skills">Stack</a>
       <a href="#projects">Projects</a>
+      <a href="#dashboards">Dashboards</a>
       <a href="#certs">Certifications</a>
       <a href="#work">Experience</a>
       <a class="cta" href="#contact">Get in touch</a>
@@ -240,7 +248,7 @@
           <p>End-to-end pipeline taking several million UK Land Registry records through a medallion architecture (Bronze, Silver, Gold) into a star-schema warehouse and a Power BI report on price trends, volumes, and regional affordability.</p>
           <div class="foot">
             <div class="tags"><span class="tag key">Microsoft Fabric</span><span class="tag">PySpark</span><span class="tag">T-SQL</span><span class="tag">Power BI</span></div>
-            <a class="link" href="https://github.com/amaldevpj/uk-housing-fabric" target="_blank" rel="noopener">View repository ↗</a>
+            <span style="display:flex;gap:16px;flex-wrap:wrap"><a class="link" href="housing-dashboard.html" target="_blank" rel="noopener">Live demo ↗</a><a class="link" href="https://github.com/amaldevpj/uk-housing-fabric" target="_blank" rel="noopener">Repository ↗</a></span>
           </div>
         </div>
 
@@ -249,8 +257,8 @@
           <h3>PredictaFinance: Smart Ops Dashboard</h3>
           <p>A predictive financial-operations dashboard that combines SQL analysis with machine-learning forecasting to surface financial insights for decision-making.</p>
           <div class="foot">
-            <div class="tags"><span class="tag key">SQL</span><span class="tag">Python</span><span class="tag">Machine Learning</span></div>
-            <a class="link" href="https://github.com/amaldevpj/PredictaFinance-Smart-Ops-Dashboard" target="_blank" rel="noopener">View repository ↗</a>
+            <div class="tags"><span class="tag key">Python</span><span class="tag">DuckDB</span><span class="tag">SQL</span><span class="tag">Forecasting</span><span class="tag">Streamlit</span></div>
+            <span style="display:flex;gap:16px;flex-wrap:wrap"><a class="link" href="predictafinance-dashboard.html" target="_blank" rel="noopener">Live demo ↗</a><a class="link" href="https://github.com/amaldevpj/PredictaFinance-Smart-Ops-Dashboard" target="_blank" rel="noopener">Repository ↗</a></span>
           </div>
         </div>
 
@@ -266,6 +274,22 @@
 
       </div>
       <a class="ghlink" href="https://github.com/amaldevpj" target="_blank" rel="noopener">See all repositories on GitHub ↗</a>
+    </div>
+  </section>
+
+  <section id="dashboards">
+    <div class="wrap">
+      <div class="eyebrow">Dashboards</div>
+      <h2 class="section-title reveal">Interactive dashboards</h2>
+      <p class="section-lead reveal">Live, clickable demos, the reporting layers built on top of my data projects, running on each project's own pipeline output. Use the controls inside each dashboard to explore.</p>
+      <div class="dash-tabs reveal">
+        <button class="dtab active" data-src="predictafinance-dashboard.html">PredictaFinance</button>
+        <button class="dtab" data-src="housing-dashboard.html">UK Housing</button>
+      </div>
+      <div class="dash-frame reveal">
+        <iframe id="dashEmbed" src="predictafinance-dashboard.html" title="Interactive dashboard" loading="lazy"></iframe>
+      </div>
+      <a class="ghlink" id="dashOpen" href="predictafinance-dashboard.html" target="_blank" rel="noopener">Open the full dashboard ↗</a>
     </div>
   </section>
 
@@ -433,6 +457,20 @@ if(!reduce){
   }
   if(reduce){ render(); } else { renderer.setAnimationLoop(render); }
   window.addEventListener('resize', ()=>{ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); layout(); });
+})();
+</script>
+<script>
+(function(){
+  const tabs = document.querySelectorAll('.dtab');
+  const frame = document.getElementById('dashEmbed');
+  const open = document.getElementById('dashOpen');
+  if(!tabs.length || !frame) return;
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    frame.src = t.dataset.src;
+    open.href = t.dataset.src;
+  }));
 })();
 </script>
 </body>
